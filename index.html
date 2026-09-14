@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi Muscu</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --accent: #ff5a3c;
+    --text: #f2f2f2;
+    --muted: #9a9ea6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    background: var(--card);
+    border: 1px solid #2a2d35;
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .exo-name { font-weight: 600; margin-bottom: 10px; }
+  .serie-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .serie-row span { width: 60px; color: var(--muted); font-size: 13px; }
+  input {
+    background: #0f1115;
+    border: 1px solid #2a2d35;
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 10px;
+    width: 100%;
+    font-size: 15px;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  button.submit {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+  .status { text-align: center; margin-top: 12px; font-size: 14px; min-height: 20px; }
+  .seance-select { display: flex; gap: 8px; margin-bottom: 16px; }
+  .seance-select button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #2a2d35;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+  }
+  .seance-select button.active { background: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>Suivi Muscu</h1>
+<div class="sub">Flo — recomposition corporelle</div>
+
+<div class="tabs">
+  <div class="tab active" data-panel="seance">Séance</div>
+  <div class="tab" data-panel="poids">Poids</div>
+  <div class="tab" data-panel="mensurations">Mensurations</div>
+  <div class="tab" data-panel="pas">Pas</div>
+</div>
+
+<!-- SEANCE -->
+<div class="panel active" id="panel-seance">
+  <div class="seance-select">
+    <button data-s="A" class="active">A</button>
+    <button data-s="B">B</button>
+    <button data-s="C">C</button>
+  </div>
+  <div id="exos-container"></div>
+  <button class="submit" onclick="envoyerSeance()">Enregistrer la séance</button>
+  <div class="status" id="status-seance"></div>
+</div>
+
+<!-- POIDS -->
+<div class="panel" id="panel-poids">
+  <div class="card">
+    <label>Poids (kg)</label>
+    <input type="number" step="0.1" id="poids-val" placeholder="ex: 149.5">
+    <button class="submit" onclick="envoyerPoids()">Enregistrer</button>
+    <div class="status" id="status-poids"></div>
+  </div>
+</div>
+
+<!-- MENSURATIONS -->
+<div class="panel" id="panel-mensurations">
+  <div class="card">
+    <label>Tour de taille (cm)</label>
+    <input type="number" step="0.5" id="m-taille">
+    <label>Tour de poitrine (cm)</label>
+    <input type="number" step="0.5" id="m-poitrine">
+    <label>Tour de bras (cm)</label>
+    <input type="number" step="0.5" id="m-bras">
+    <label>Tour de cuisse (cm)</label>
+    <input type="number" step="0.5" id="m-cuisse">
+    <label>Tour de hanches (cm)</label>
+    <input type="number" step="0.5" id="m-hanches">
+    <button class="submit" onclick="envoyerMensurations()">Enregistrer</button>
+    <div class="status" id="status-mensurations"></div>
+  </div>
+</div>
+
+<!-- PAS -->
+<div class="panel" id="panel-pas">
+  <div class="card">
+    <label>Pas aujourd'hui</label>
+    <input type="number" id="pas-val" placeholder="ex: 8200">
+    <button class="submit" onclick="envoyerPas()">Enregistrer</button>
+    <div class="status" id="status-pas"></div>
+  </div>
+</div>
+
+<script>
+// Remplace par l'URL de ton déploiement Apps Script (Exécuter en tant qu'application Web)
+const API_URL = "https://script.google.com/macros/s/AKfycbyyoHgOF4VQ-9clLfYQi8JVMrp2epXBUyFXuBH90hMV4t6l8FUAoohCCS75viW0ZvjW/exec";
+
+const EXERCICES = {
+  A: ['Hack squat', 'Développé couché', 'Développé militaire haltères', 'Extensions triceps poulie'],
+  B: ['Leg curl', 'Tirage vertical poulie haute', 'Rowing machine assis', 'Curl biceps haltères', 'Mollets debout'],
+  C: ['Presse à cuisses', 'Développé incliné machine', 'Tirage horizontal poulie basse', 'Élévations latérales machine', 'Curl biceps machine']
+};
+
+let seanceActuelle = 'A';
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.seance-select button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seance-select button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    seanceActuelle = btn.dataset.s;
+    renderExos();
+  });
+});
+
+function renderExos() {
+  const container = document.getElementById('exos-container');
+  container.innerHTML = '';
+  EXERCICES[seanceActuelle].forEach((ex, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="exo-name">${ex}</div>
+      <div class="serie-row"><span>Série 1</span><input type="number" step="0.5" placeholder="kg" id="ex${i}-s1-kg"><input type="number" placeholder="reps" id="ex${i}-s1-reps"></div>
+      <div class="serie-row"><span>Série 2</span><input type="number" step="0.5" placeholder="kg" id="ex${i}-s2-kg"><input type="number" placeholder="reps" id="ex${i}-s2-reps"></div>
+      <div class="serie-row"><span>Série 3</span><input type="number" step="0.5" placeholder="kg" id="ex${i}-s3-kg"><input type="number" placeholder="reps" id="ex${i}-s3-reps"></div>
+    `;
+    container.appendChild(card);
+  });
+}
+renderExos();
+
+async function envoyer(payload, statusId) {
+  const statusEl = document.getElementById(statusId);
+  statusEl.textContent = 'Envoi...';
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    statusEl.textContent = json.status === 'ok' ? '✓ Enregistré' : 'Erreur: ' + json.message;
+  } catch (err) {
+    statusEl.textContent = 'Erreur réseau';
+  }
+}
+
+function envoyerSeance() {
+  EXERCICES[seanceActuelle].forEach((ex, i) => {
+    const series = [];
+    for (let s = 1; s <= 3; s++) {
+      const kg = document.getElementById(`ex${i}-s${s}-kg`).value;
+      const reps = document.getElementById(`ex${i}-s${s}-reps`).value;
+      if (kg && reps) series.push({ serie: s, poids: parseFloat(kg), reps: parseInt(reps) });
+    }
+    if (series.length > 0) {
+      envoyer({ type: 'seance', seance: seanceActuelle, exercice: ex, series }, 'status-seance');
+    }
+  });
+}
+
+function envoyerPoids() {
+  const val = document.getElementById('poids-val').value;
+  if (!val) return;
+  envoyer({ type: 'poids', poids: parseFloat(val) }, 'status-poids');
+}
+
+function envoyerMensurations() {
+  envoyer({
+    type: 'mensurations',
+    taille: parseFloat(document.getElementById('m-taille').value) || '',
+    poitrine: parseFloat(document.getElementById('m-poitrine').value) || '',
+    bras: parseFloat(document.getElementById('m-bras').value) || '',
+    cuisse: parseFloat(document.getElementById('m-cuisse').value) || '',
+    hanches: parseFloat(document.getElementById('m-hanches').value) || ''
+  }, 'status-mensurations');
+}
+
+function envoyerPas() {
+  const val = document.getElementById('pas-val').value;
+  if (!val) return;
+  envoyer({ type: 'pas', pas: parseInt(val) }, 'status-pas');
+}
+</script>
+
+</body>
+</html>
