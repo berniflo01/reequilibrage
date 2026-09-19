@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi — Flo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1815;
+    --surface: #16241F;
+    --surface2: #1E322B;
+    --line: #2A3F37;
+    --accent: #F5A623;
+    --accent2: #FF6F59;
+    --text: #F2EFE6;
+    --muted: #8FA69C;
+    --good: #8FD14F;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', -apple-system, sans-serif;
+  }
+  body { padding: 20px 16px 60px; max-width: 480px; margin: 0 auto; }
+
+  .top { margin-bottom: 20px; }
+  .top .kicker { color: var(--muted); font-size: 13px; letter-spacing: 0.02em; }
+  .top h1 { font-size: 22px; font-weight: 600; margin: 2px 0 0; }
+
+  nav.tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 4px 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-right: 14px;
+  }
+  nav.tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* --- Onglet Pas : hero + tuiles --- */
+  .hero {
+    padding: 22px 0 18px;
+  }
+  .hero .label { color: var(--muted); font-size: 14px; }
+  .hero .number {
+    font-size: 58px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    margin: 4px 0 2px;
+  }
+  .hero .number span { color: var(--accent); }
+  .hero .sub { color: var(--muted); font-size: 13px; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .tile.wide { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; }
+  .tile .t-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  .tile .t-value { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile .t-value.accent2 { color: var(--accent2); }
+
+  .fun {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 22px;
+    line-height: 1.5;
+  }
+  .fun strong { color: var(--accent); }
+
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .entry .row { display: flex; gap: 10px; }
+  .entry label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  input::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+
+  button.submit {
+    width: 100%;
+    background: var(--accent);
+    color: #14211b;
+    border: none;
+    padding: 13px;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    margin-top: 14px;
+    cursor: pointer;
+  }
+  button.submit:active { opacity: 0.85; }
+
+  .status { text-align: center; margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 18px; }
+
+  /* --- Autres onglets (séance / poids / mensurations) --- */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .exo-name { font-weight: 600; margin-bottom: 10px; }
+  .serie-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .serie-row span { width: 58px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  .seance-select { display: flex; gap: 8px; margin-bottom: 16px; }
+  .seance-select button {
+    flex: 1; padding: 10px; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text); font-size: 15px; font-family: inherit; cursor: pointer;
+  }
+  .seance-select button.active { background: var(--accent); color: #14211b; border-color: var(--accent); }
+
+  /* --- Repère dernière perf + delta + minuteur --- */
+  .last-perf { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .last-perf strong { color: var(--text); }
+  .serie-row { position: relative; }
+  .serie-row .delta { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+  .delta.up { color: var(--good); }
+  .delta.down { color: var(--accent2); }
+  .delta.same { color: var(--muted); }
+  .rest-btn {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface2); color: var(--text);
+    font-size: 15px; cursor: pointer; padding: 0;
+  }
+  .rest-btn:active { opacity: 0.8; }
+
+  .serie-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .serie-btn {
+    flex: 1; padding: 8px; border-radius: 8px; border: 1px dashed var(--line);
+    background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
+  }
+  .serie-btn:active { background: var(--surface2); color: var(--text); }
+
+  #rest-bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--accent); color: #14211b;
+    padding: 12px 16px; text-align: center; font-weight: 600; font-size: 15px;
+    transform: translateY(100%); transition: transform 0.25s ease;
+    z-index: 50;
+  }
+  #rest-bar.show { transform: translateY(0); }
+  #rest-bar.done { background: var(--good); }
+
+  /* --- Mini calendrier pas --- */
+  .pas-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 18px; }
+  .pas-cal .d {
+    aspect-ratio: 1; border-radius: 6px; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface); color: var(--muted); border: 1px solid var(--line);
+  }
+  .pas-cal .d.filled { background: var(--surface2); color: var(--text); border-color: var(--good); }
+  .pas-cal .d.missing { border-color: var(--accent2); color: var(--accent2); }
+  .pas-cal .d.future { opacity: 0.3; }
+  .pas-warn { font-size: 12px; color: var(--accent); margin-top: -8px; margin-bottom: 10px; min-height: 14px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="kicker">Suivi</div>
+  <h1>Flo</h1>
+</div>
+
+<nav class="tabs">
+  <button class="active" data-panel="pas">Pas</button>
+  <button data-panel="seance">Séance</button>
+  <button data-panel="poids">Poids</button>
+  <button data-panel="mensurations">Mensurations</button>
+</nav>
+
+<!-- PAS -->
+<div class="panel active" id="panel-pas">
+  <div class="hero">
+    <div class="label">Total depuis le début</div>
+    <div class="number" id="pas-total"><span>—</span></div>
+    <div class="sub" id="pas-since">chargement...</div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="t-label">Cette semaine</div>
+      <div class="t-value" id="pas-week">—</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">Ce mois</div>
+      <div class="t-value" id="pas-month">—</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">Cette année</div>
+      <div class="t-value" id="pas-year">—</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">Moyenne / jour</div>
+      <div class="t-value accent2" id="pas-avg">—</div>
+    </div>
+    <div class="tile wide">
+      <div>
+        <div class="t-label">Record</div>
+        <div class="t-value" id="pas-best">—</div>
+      </div>
+      <div class="sub" id="pas-best-date"></div>
+    </div>
+  </div>
+
+  <div class="fun" id="pas-fun">On calcule tes stats...</div>
+
+  <div class="last-perf" style="margin-bottom:6px;">Ce mois-ci — vert = rempli, orange = manquant</div>
+  <div class="pas-cal" id="pas-cal"></div>
+
+  <div class="entry">
+    <div class="row">
+      <div style="flex:1">
+        <label>Jour</label>
+        <input type="date" id="pas-date" onchange="checkPasDate()">
+      </div>
+      <div style="flex:1">
+        <label>Pas</label>
+        <input type="number" id="pas-val" placeholder="8200">
+      </div>
+    </div>
+    <div class="pas-warn" id="pas-warn"></div>
+    <button class="submit" onclick="envoyerPas()">Valider</button>
+    <div class="status" id="status-pas"></div>
+  </div>
+</div>
+
+<!-- SEANCE -->
+<div class="panel" id="panel-seance">
+  <div class="seance-select">
+    <button data-s="A" class="active">A</button>
+    <button data-s="B">B</button>
+    <button data-s="C">C</button>
+  </div>
+  <div class="fun" id="seance-summary">Chargement...</div>
+  <div id="exos-container"></div>
+
+  <div class="card">
+    <div class="exo-name">🚴 Vélo (récup)</div>
+    <div class="last-perf" id="cardio-last">Chargement du repère...</div>
+    <div class="serie-row">
+      <span>Durée</span><input type="number" id="cardio-duree" placeholder="min">
+      <span>Watts</span><input type="number" id="cardio-watts" placeholder="W">
+      <span>Niv.</span><input type="number" id="cardio-niveau" placeholder="5">
+    </div>
+    <button class="submit" onclick="envoyerCardio()" style="margin-top:10px;">Enregistrer le vélo</button>
+    <div class="status" id="status-cardio"></div>
+  </div>
+</div>
+
+<!-- POIDS -->
+<div class="panel" id="panel-poids">
+  <div class="fun" id="poids-summary">Chargement...</div>
+  <div class="card">
+    <label class="field">Poids (kg)</label>
+    <input type="number" step="0.1" id="poids-val" placeholder="ex: 149.5">
+    <button class="submit" onclick="envoyerPoids()">Enregistrer</button>
+    <div class="status" id="status-poids"></div>
+  </div>
+</div>
+
+<!-- MENSURATIONS -->
+<div class="panel" id="panel-mensurations">
+  <div class="fun" id="mens-summary">Chargement...</div>
+  <div class="card">
+    <label class="field">Tour de taille (cm)</label>
+    <input type="number" step="0.5" id="m-taille">
+    <label class="field">Tour de poitrine (cm)</label>
+    <input type="number" step="0.5" id="m-poitrine">
+    <label class="field">Tour de bras droit (cm)</label>
+    <input type="number" step="0.5" id="m-bras-droit">
+    <label class="field">Tour de bras gauche (cm)</label>
+    <input type="number" step="0.5" id="m-bras-gauche">
+    <label class="field">Tour de cuisse droite (cm)</label>
+    <input type="number" step="0.5" id="m-cuisse-droite">
+    <label class="field">Tour de cuisse gauche (cm)</label>
+    <input type="number" step="0.5" id="m-cuisse-gauche">
+    <label class="field">Tour de hanches (cm)</label>
+    <input type="number" step="0.5" id="m-hanches">
+    <button class="submit" onclick="envoyerMensurations()">Enregistrer</button>
+    <div class="status" id="status-mensurations"></div>
+  </div>
+</div>
+
+<div id="rest-bar"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyyoHgOF4VQ-9clLfYQi8JVMrp2epXBUyFXuBH90hMV4t6l8FUAoohCCS75viW0ZvjW/exec";
+
+const EXERCICES = {
+  A: ['Hack squat', 'Développé couché', 'Développé militaire haltères', 'Extensions triceps poulie'],
+  B: ['Leg curl', 'Tirage vertical poulie haute', 'Rowing machine assis', 'Curl biceps haltères', 'Mollets debout'],
+  C: ['Presse à cuisses', 'Développé incliné machine', 'Tirage horizontal poulie basse', 'Élévations latérales machine', 'Curl biceps machine']
+};
+let seanceActuelle = 'A';
+
+document.querySelectorAll('nav.tabs button').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.seance-select button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seance-select button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    seanceActuelle = btn.dataset.s;
+    renderExos();
+    chargerStatsSeance();
+  });
+});
+
+let dernierePerf = { exercices: {} };
+let nbSeries = {};
+
+function renderExos() {
+  const container = document.getElementById('exos-container');
+  container.innerHTML = '';
+  EXERCICES[seanceActuelle].forEach((ex, i) => {
+    if (!nbSeries[i]) nbSeries[i] = 3;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="exo-name">${ex}</div>
+      <div class="last-perf" id="ex${i}-last">Chargement du repère...</div>
+      <div id="ex${i}-series"></div>
+      <div class="serie-actions">
+        <button type="button" class="serie-btn" onclick="retirerSerie(${i})">− série</button>
+        <button type="button" class="serie-btn" onclick="ajouterSerie(${i})">+ série</button>
+      </div>
+      <button class="submit" onclick="envoyerExercice(${i})" style="margin-top:10px;">Enregistrer</button>
+      <div class="status" id="status-ex${i}"></div>
+    `;
+    container.appendChild(card);
+    renderSeriesRows(i);
+  });
+  chargerDernierePerformance();
+}
+renderExos();
+
+function renderSeriesRows(i) {
+  const el = document.getElementById(`ex${i}-series`);
+  el.innerHTML = '';
+  for (let s = 1; s <= nbSeries[i]; s++) {
+    const row = document.createElement('div');
+    row.className = 'serie-row';
+    row.innerHTML = `<span>Série ${s}</span><input type="number" step="0.5" placeholder="kg" id="ex${i}-s${s}-kg" oninput="updateDelta(${i},${s})"><input type="number" placeholder="reps" id="ex${i}-s${s}-reps"><span class="delta" id="ex${i}-s${s}-delta"></span><button type="button" class="rest-btn" onclick="startRestTimer(90)" title="Repos">⏱</button>`;
+    el.appendChild(row);
+  }
+}
+
+function lireValeursSeries(i) {
+  const valeurs = [];
+  for (let s = 1; s <= nbSeries[i]; s++) {
+    const kgEl = document.getElementById(`ex${i}-s${s}-kg`);
+    const repsEl = document.getElementById(`ex${i}-s${s}-reps`);
+    valeurs.push({ kg: kgEl ? kgEl.value : '', reps: repsEl ? repsEl.value : '' });
+  }
+  return valeurs;
+}
+
+function restaurerValeurs(i, valeurs) {
+  valeurs.forEach((v, idx) => {
+    const s = idx + 1;
+    const kgEl = document.getElementById(`ex${i}-s${s}-kg`);
+    const repsEl = document.getElementById(`ex${i}-s${s}-reps`);
+    if (kgEl) kgEl.value = v.kg;
+    if (repsEl) repsEl.value = v.reps;
+  });
+}
+
+function ajouterSerie(i) {
+  const valeurs = lireValeursSeries(i);
+  nbSeries[i]++;
+  renderSeriesRows(i);
+  restaurerValeurs(i, valeurs);
+  chargerDernierePerformance();
+}
+
+function retirerSerie(i) {
+  if (nbSeries[i] <= 1) return;
+  const valeurs = lireValeursSeries(i);
+  nbSeries[i]--;
+  renderSeriesRows(i);
+  restaurerValeurs(i, valeurs);
+}
+
+async function chargerDernierePerformance() {
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_derniere_performance', seance: seanceActuelle }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    dernierePerf = s;
+    EXERCICES[seanceActuelle].forEach((ex, i) => {
+      const lastEl = document.getElementById(`ex${i}-last`);
+      const d = s.exercices[ex];
+      if (!d || !d.hasData) { lastEl.textContent = 'Pas encore de données pour cet exercice.'; return; }
+      const txt = d.series.map(se => se.poids + 'kg × ' + se.reps).join(' — ');
+      lastEl.innerHTML = 'Dernière fois (' + d.date + ') : <strong>' + txt + '</strong>';
+      // pré-remplissage
+      d.series.forEach(se => {
+        const kgInput = document.getElementById(`ex${i}-s${se.serie}-kg`);
+        const repsInput = document.getElementById(`ex${i}-s${se.serie}-reps`);
+        if (kgInput && !kgInput.value) kgInput.value = se.poids;
+        if (repsInput && !repsInput.value) repsInput.value = se.reps;
+      });
+    });
+  } catch (err) {
+    // pas grave si ça échoue, la saisie reste possible sans repère
+  }
+}
+
+function updateDelta(i, serieNum) {
+  const ex = EXERCICES[seanceActuelle][i];
+  const d = dernierePerf.exercices && dernierePerf.exercices[ex];
+  const deltaEl = document.getElementById(`ex${i}-s${serieNum}-delta`);
+  if (!deltaEl) return;
+  if (!d || !d.hasData) { deltaEl.textContent = ''; return; }
+  const lastSerie = d.series.find(se => se.serie === serieNum);
+  const kgInput = document.getElementById(`ex${i}-s${serieNum}-kg`);
+  const kg = parseFloat(kgInput.value);
+  if (!lastSerie || isNaN(kg)) { deltaEl.textContent = ''; return; }
+  deltaEl.className = 'delta';
+  if (kg > lastSerie.poids) { deltaEl.textContent = '↑'; deltaEl.classList.add('up'); }
+  else if (kg < lastSerie.poids) { deltaEl.textContent = '↓'; deltaEl.classList.add('down'); }
+  else { deltaEl.textContent = '→'; deltaEl.classList.add('same'); }
+}
+
+let restTimerInterval = null;
+function startRestTimer(seconds) {
+  const bar = document.getElementById('rest-bar');
+  if (restTimerInterval) clearInterval(restTimerInterval);
+  let remaining = seconds;
+  bar.classList.remove('done');
+  bar.classList.add('show');
+  bar.textContent = 'Repos — ' + fmtTime(remaining);
+  restTimerInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(restTimerInterval);
+      bar.classList.add('done');
+      bar.textContent = 'Repos terminé — série suivante !';
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      setTimeout(() => bar.classList.remove('show'), 4000);
+    } else {
+      bar.textContent = 'Repos — ' + fmtTime(remaining);
+    }
+  }, 1000);
+}
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+async function loadPasCalendar() {
+  const calEl = document.getElementById('pas-cal');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_pas_month' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    calEl.innerHTML = '';
+    const daysInMonth = new Date(s.year, s.month + 1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = s.year + '-' + String(s.month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      const div = document.createElement('div');
+      div.className = 'd';
+      div.textContent = day;
+      if (day > s.todayDay) div.classList.add('future');
+      else if (s.days[key] != null) div.classList.add('filled');
+      else div.classList.add('missing');
+      calEl.appendChild(div);
+    }
+  } catch (err) {
+    calEl.innerHTML = '';
+  }
+}
+loadPasCalendar();
+
+async function checkPasDate() {
+  const date = document.getElementById('pas-date').value;
+  const warnEl = document.getElementById('pas-warn');
+  if (!date) { warnEl.textContent = ''; return; }
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_pas_month' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    const existing = s.days[date];
+    warnEl.textContent = (existing != null) ? ('Ce jour a déjà ' + fmt(existing) + ' pas — la valeur sera remplacée.') : '';
+  } catch (err) {
+    warnEl.textContent = '';
+  }
+}
+
+document.getElementById('pas-date').valueAsDate = new Date();
+
+async function envoyer(payload, statusId) {
+  const statusEl = document.getElementById(statusId);
+  statusEl.textContent = 'Envoi...';
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    statusEl.textContent = json.status === 'ok' ? '✓ Enregistré' : 'Erreur: ' + json.message;
+    return json.status === 'ok';
+  } catch (err) {
+    statusEl.textContent = 'Erreur réseau';
+    return false;
+  }
+}
+
+async function envoyerCardio() {
+  const duree = document.getElementById('cardio-duree').value;
+  const watts = document.getElementById('cardio-watts').value;
+  const niveau = document.getElementById('cardio-niveau').value;
+  if (!duree) return;
+  const ok = await envoyer({ type: 'cardio', seance: seanceActuelle, duree: parseFloat(duree), watts: parseFloat(watts) || '', niveau: parseFloat(niveau) || '' }, 'status-cardio');
+  if (ok) chargerStatsCardio();
+}
+
+async function chargerStatsCardio() {
+  const el = document.getElementById('cardio-last');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_stats_cardio' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    if (!s.hasData) { el.textContent = 'Pas encore de vélo enregistré.'; return; }
+    let txt = 'Dernière fois (' + s.date + ') : <strong>' + s.duree + ' min';
+    if (s.watts) txt += ', ' + s.watts + 'W';
+    if (s.niveau) txt += ', niveau ' + s.niveau;
+    txt += '</strong>';
+    el.innerHTML = txt;
+  } catch (err) {
+    el.textContent = 'Repère indisponible pour le moment.';
+  }
+}
+
+async function envoyerExercice(i) {
+  const ex = EXERCICES[seanceActuelle][i];
+  const series = [];
+  for (let s = 1; s <= nbSeries[i]; s++) {
+    const kg = document.getElementById(`ex${i}-s${s}-kg`).value;
+    const reps = document.getElementById(`ex${i}-s${s}-reps`).value;
+    if (kg && reps) series.push({ serie: s, poids: parseFloat(kg), reps: parseInt(reps) });
+  }
+  if (series.length === 0) return;
+  const ok = await envoyer({ type: 'seance', seance: seanceActuelle, exercice: ex, series }, `status-ex${i}`);
+  if (ok) { chargerStatsSeance(); chargerDernierePerformance(); }
+}
+
+async function envoyerPoids() {
+  const val = document.getElementById('poids-val').value;
+  if (!val) return;
+  const ok = await envoyer({ type: 'poids', poids: parseFloat(val) }, 'status-poids');
+  if (ok) chargerStatsPoids();
+}
+
+async function envoyerMensurations() {
+  const ok = await envoyer({
+    type: 'mensurations',
+    taille: parseFloat(document.getElementById('m-taille').value) || '',
+    poitrine: parseFloat(document.getElementById('m-poitrine').value) || '',
+    brasDroit: parseFloat(document.getElementById('m-bras-droit').value) || '',
+    brasGauche: parseFloat(document.getElementById('m-bras-gauche').value) || '',
+    cuisseDroite: parseFloat(document.getElementById('m-cuisse-droite').value) || '',
+    cuisseGauche: parseFloat(document.getElementById('m-cuisse-gauche').value) || '',
+    hanches: parseFloat(document.getElementById('m-hanches').value) || ''
+  }, 'status-mensurations');
+  if (ok) chargerStatsMensurations();
+}
+
+async function envoyerPas() {
+  const val = document.getElementById('pas-val').value;
+  const date = document.getElementById('pas-date').value;
+  if (!val || !date) return;
+  const ok = await envoyer({ type: 'pas', pas: parseInt(val), date }, 'status-pas');
+  if (ok) {
+    document.getElementById('pas-val').value = '';
+    document.getElementById('pas-warn').textContent = '';
+    chargerStatsPas();
+    loadPasCalendar();
+  }
+}
+
+function fmt(n) { return n.toLocaleString('fr-FR'); }
+
+async function chargerStatsPas() {
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_stats_pas' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+
+    document.getElementById('pas-total').innerHTML = '<span>' + fmt(s.total) + '</span>';
+    document.getElementById('pas-since').textContent = s.since ? ('depuis le ' + s.since + ' — ' + s.daysTracked + ' jours suivis') : "aucune donnée pour l'instant";
+    document.getElementById('pas-week').textContent = fmt(s.week);
+    document.getElementById('pas-month').textContent = fmt(s.month);
+    document.getElementById('pas-year').textContent = fmt(s.year);
+    document.getElementById('pas-avg').textContent = fmt(s.average);
+    document.getElementById('pas-best').textContent = fmt(s.best);
+    document.getElementById('pas-best-date').textContent = s.bestDate || '';
+
+    const marathons = (s.km / 42.195).toFixed(1);
+    const funEl = document.getElementById('pas-fun');
+    if (s.total > 0) {
+      funEl.innerHTML = "Ça fait <strong>" + s.km + " km</strong> parcourus depuis le début — l'équivalent de <strong>" + marathons + "</strong> marathons à pied. Continue, ça s'additionne vite.";
+    } else {
+      funEl.textContent = 'Ajoute ton premier jour ci-dessous pour démarrer le compteur.';
+    }
+  } catch (err) {
+    document.getElementById('pas-fun').textContent = 'Impossible de charger les stats pour le moment.';
+  }
+}
+chargerStatsPas();
+chargerStatsSeance();
+chargerStatsPoids();
+chargerStatsMensurations();
+chargerStatsCardio();
+
+async function chargerStatsSeance() {
+  const el = document.getElementById('seance-summary');
+  el.textContent = 'Chargement...';
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_stats_seance', seance: seanceActuelle }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    let lines = '<strong>' + s.totalSeances + '</strong> séance(s) au total depuis le début.<br>';
+    EXERCICES[seanceActuelle].forEach(ex => {
+      const d = s.exercices[ex];
+      if (!d || !d.hasData) { lines += ex + ' : pas encore de données<br>'; return; }
+      let deltaTxt = '';
+      if (d.delta > 0) deltaTxt = ' (+' + d.delta + ' kg depuis le début)';
+      else if (d.delta < 0) deltaTxt = ' (' + d.delta + ' kg depuis le début)';
+      lines += ex + ' : <strong>' + d.current + ' kg</strong>' + deltaTxt + '<br>';
+    });
+    el.innerHTML = lines;
+  } catch (err) {
+    el.textContent = 'Stats indisponibles pour le moment.';
+  }
+}
+
+async function chargerStatsPoids() {
+  const el = document.getElementById('poids-summary');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_stats_poids' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    if (!s.hasData) { el.textContent = 'Note ton premier poids pour démarrer le suivi.'; return; }
+    const arrow = s.trend === 'down' ? '↓' : s.trend === 'up' ? '↑' : '→';
+    const deltaTxt = s.delta <= 0 ? (Math.abs(s.delta) + ' kg perdus') : (s.delta + ' kg pris');
+    el.innerHTML = 'Dernier poids : <strong>' + s.last + ' kg</strong> (' + s.lastDate + ') ' + arrow +
+      '<br>Depuis le ' + s.firstDate + ' : <strong>' + deltaTxt + '</strong>';
+  } catch (err) {
+    el.textContent = 'Stats indisponibles pour le moment.';
+  }
+}
+
+async function chargerStatsMensurations() {
+  const el = document.getElementById('mens-summary');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_stats_mensurations' }) });
+    const s = await res.json();
+    if (s.status === 'error') throw new Error(s.message);
+    if (!s.hasData) { el.textContent = 'Prends ta première série de mesures pour démarrer le suivi.'; return; }
+    const labels = { taille: 'Taille', poitrine: 'Poitrine', brasDroit: 'Bras droit', brasGauche: 'Bras gauche', cuisseDroite: 'Cuisse droite', cuisseGauche: 'Cuisse gauche', hanches: 'Hanches' };
+    let lines = 'Dernier relevé : ' + s.lastDate + '<br>';
+    Object.keys(labels).forEach(k => {
+      const m = s.mesures[k];
+      if (m.last === '' || m.last == null) return;
+      let dTxt = '';
+      if (m.delta != null) dTxt = m.delta <= 0 ? ' (' + m.delta + ' cm)' : ' (+' + m.delta + ' cm)';
+      lines += labels[k] + ' : <strong>' + m.last + ' cm</strong>' + dTxt + '<br>';
+    });
+    lines += 'Prochain relevé conseillé : ' + s.nextDue;
+    el.innerHTML = lines;
+  } catch (err) {
+    el.textContent = 'Stats indisponibles pour le moment.';
+  }
+}
+</script>
+
+</body>
+</html>
